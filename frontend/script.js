@@ -10,7 +10,7 @@ async function uploadFile() {
     let formData = new FormData();
     formData.append("file", file);
 
-    let response = await fetch("http://127.0.0.1:8000/summarize", {
+    let response = await fetch("https://fastapi-backend-emfc.onrender.com", {
         method: "POST",
         body: formData
     });
