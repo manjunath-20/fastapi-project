@@ -5,3 +5,4 @@ requests
 pypdf
 nltk
 python-multipart
+pypdf2
