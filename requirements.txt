@@ -4,3 +4,4 @@ pydantic
 requests
 pypdf
 nltk
+python-multipart
