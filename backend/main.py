@@ -1,56 +1,45 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from nltk.tokenize import sent_tokenize, word_tokenize
-from collections import defaultdict
-from PyPDF2 import PdfReader
+from fastapi.responses import JSONResponse
+import pdfplumber
 
 app = FastAPI()
 
-# enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],    # allow all origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-# summarizer function
-def summarize_text(text, max_sentences=5):
-    sentences = sent_tokenize(text)
-    freq = defaultdict(int)
-
-    for word in word_tokenize(text.lower()):
-        freq[word] += 1
-
-    sentence_scores = {}
-
-    for sentence in sentences:
-        sentence_scores[sentence] = sum(freq.get(w, 0) for w in word_tokenize(sentence.lower()))
-
-    ranked_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)
-
-    summary_sentences = ranked_sentences[:max_sentences]
-    summary = " ".join(summary_sentences)
-
-    return summary
-
+@app.get("/")
+def root():
+    return {"message": "PDF Summarizer API is running"}
 
 @app.post("/summarize")
 async def summarize_pdf(file: UploadFile = File(...)):
-    text = ""
-    reader = PdfReader(file.file)
+    try:
+        if not file.filename.lower().endswith(".pdf"):
+            return JSONResponse(status_code=400, content={"error": "Only PDF files allowed"})
 
-    for page in reader.pages:
-        extracted = page.extract_text()
-        if extracted:
-            text += extracted
+        text = ""
 
-    summary = summarize_text(text, max_sentences=5)
+        with pdfplumber.open(file.file) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
 
-    return {
-        "summary": summary,
-        "characters_extracted": len(text)
-    }
+        if not text.strip():
+            return {"summary": "No readable text found in the PDF."}
+
+        # Simple safe summary: first 5 paragraphs
+        paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
+        summary = " ".join(paragraphs[:5])
+
+        return {"summary": summary}
+
+    except Exception as e:
+        print("ERROR:", e)
+        return JSONResponse(status_code=500, content={"error": str(e)})

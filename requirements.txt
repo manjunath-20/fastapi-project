@@ -1,6 +1,4 @@
 fastapi
 uvicorn
 pdfplumber
-nltk
 python-multipart
-pypdf2
