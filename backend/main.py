@@ -17,14 +17,13 @@ app.add_middleware(
 def root():
     return {"message": "PDF Summarizer API is running"}
 
-@app.post("/summarize")
+@app.post("/summarize", summary="Summarize Pdf", description="Upload a PDF and get summary")
 async def summarize_pdf(file: UploadFile = File(...)):
     try:
         if not file.filename.lower().endswith(".pdf"):
             return JSONResponse(status_code=400, content={"error": "Only PDF files allowed"})
 
         text = ""
-
         with pdfplumber.open(file.file) as pdf:
             for page in pdf.pages:
                 page_text = page.extract_text()
@@ -40,5 +39,4 @@ async def summarize_pdf(file: UploadFile = File(...)):
         return {"summary": summary}
 
     except Exception as e:
-        print("ERROR:", e)
         return JSONResponse(status_code=500, content={"error": str(e)})
