@@ -34,7 +34,6 @@ async def summarize_pdf(file: UploadFile = File(...)):
         if not text.strip():
             return {"summary": "No readable text found in the PDF."}
 
-        # Simple safe summary: first 5 paragraphs
         paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
         summary = " ".join(paragraphs[:5])
 
