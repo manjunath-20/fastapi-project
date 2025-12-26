@@ -17,6 +17,17 @@ app.add_middleware(
 def root():
     return {"message": "PDF Summarizer API is running"}
 
+def simple_summarize(text, max_sentences=12):
+    sentences = text.replace("\n", " ").split(".")
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 40]
+
+    if len(sentences) <= max_sentences:
+        return ". ".join(sentences)
+
+    step = max(1, len(sentences) // max_sentences)
+    selected = sentences[::step][:max_sentences]
+    return ". ".join(selected)
+
 @app.post("/summarize", summary="Summarize Pdf", description="Upload a PDF and get summary")
 async def summarize_pdf(file: UploadFile = File(...)):
     try:
@@ -33,8 +44,7 @@ async def summarize_pdf(file: UploadFile = File(...)):
         if not text.strip():
             return {"summary": "No readable text found in the PDF."}
 
-        paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
-        summary = " ".join(paragraphs[:5])
+        summary = simple_summarize(text)
 
         return {"summary": summary}
 
