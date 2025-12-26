@@ -5,6 +5,7 @@ import pdfplumber
 
 app = FastAPI()
 
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,18 +18,11 @@ app.add_middleware(
 def root():
     return {"message": "PDF Summarizer API is running"}
 
-def simple_summarize(text, max_sentences=12):
-    sentences = text.replace("\n", " ").split(".")
-    sentences = [s.strip() for s in sentences if len(s.strip()) > 40]
+def simple_summarize(text: str) -> str:
+    paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
+    return " ".join(paragraphs[:8])  # take first 8 meaningful lines
 
-    if len(sentences) <= max_sentences:
-        return ". ".join(sentences)
-
-    step = max(1, len(sentences) // max_sentences)
-    selected = sentences[::step][:max_sentences]
-    return ". ".join(selected)
-
-@app.post("/summarize", summary="Summarize Pdf", description="Upload a PDF and get summary")
+@app.post("/summarize", summary="Summarize PDF", description="Upload a PDF and get summary")
 async def summarize_pdf(file: UploadFile = File(...)):
     try:
         if not file.filename.lower().endswith(".pdf"):
@@ -44,9 +38,15 @@ async def summarize_pdf(file: UploadFile = File(...)):
         if not text.strip():
             return {"summary": "No readable text found in the PDF."}
 
-        summary = simple_summarize(text)
+        raw_summary = simple_summarize(text)
 
-        return {"summary": summary}
+        formatted_summary = "\n".join(
+            f"• {s.strip()}."
+            for s in raw_summary.split(".")
+            if len(s.strip()) > 20
+        )
+
+        return {"summary": formatted_summary}
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
