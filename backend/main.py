@@ -19,8 +19,8 @@ def root():
     return {"message": "PDF Summarizer API is running"}
 
 def simple_summarize(text: str) -> str:
-    paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
-    return " ".join(paragraphs[:8])  # take first 8 meaningful lines
+    paragraphs = [p.strip() for p in text.split("\n") if len(p.strip()) > 40]
+    return " ".join(paragraphs[:20])  # take first 20 meaningful lines
 
 @app.post("/summarize", summary="Summarize PDF", description="Upload a PDF and get summary")
 async def summarize_pdf(file: UploadFile = File(...)):
@@ -43,7 +43,7 @@ async def summarize_pdf(file: UploadFile = File(...)):
         formatted_summary = "\n".join(
             f"• {s.strip()}."
             for s in raw_summary.split(".")
-            if len(s.strip()) > 20
+            if len(s.strip()) > 25
         )
 
         return {"summary": formatted_summary}
